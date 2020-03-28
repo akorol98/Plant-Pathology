@@ -1,8 +1,11 @@
 
+import torch
+import numpy as np
 from torch.utils.data import Dataset
 import pandas as pd
 import os
 from skimage import io
+from skimage.transform import rotate
 
 class PlantPathologyDataset(Dataset):
     """Plant Pathology dataset."""
@@ -52,7 +55,12 @@ class ToTensor(object):
     def __call__(self, sample):
         image, labels = sample['image'], sample['labels']
 
-        # swap color axis because
-        image = image.transpose((2, 0, 1))
+        # rotate if needed
+        if image.shape[0] == 2048:
+            image = image.transpose((2, 1, 0))
+        else:
+            # swap color axis
+            image = image.transpose((2, 0, 1))
+
         return {'image': torch.from_numpy(image),
                 'labels': torch.from_numpy(labels)}
