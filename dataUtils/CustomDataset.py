@@ -6,6 +6,7 @@ import pandas as pd
 import os
 from skimage import io
 from skimage.transform import rotate
+import torchvision.transforms as transforms
 
 class PlantPathologyDataset(Dataset):
     """Plant Pathology dataset."""
@@ -62,5 +63,10 @@ class ToTensor(object):
             # swap color axis
             image = image.transpose((2, 0, 1))
 
-        return {'image': torch.from_numpy(image),
-                'labels': torch.from_numpy(labels)}
+        image = torch.from_numpy(image).float()
+
+        in_transform = transforms.Compose([transforms.Normalize([torch.mean(image)], [torch.std(image)])])
+        image = in_transform(image)
+
+        return {'image': image,
+                'labels': torch.from_numpy(labels).float()}
