@@ -6,12 +6,14 @@ import pandas as pd
 import os
 from skimage import io
 from skimage.transform import rotate
+from skimage.transform import resize
 import torchvision.transforms as transforms
+
 
 class PlantPathologyDataset(Dataset):
     """Plant Pathology dataset."""
-
-    def __init__(self, csv_file, root_dir, transform=None):
+    
+    def __init__(self, csv_file, root_dir, transform=None, slice = None):
         """
         Args:
             csv_file (string): Path to the csv file with image discription.
@@ -19,7 +21,16 @@ class PlantPathologyDataset(Dataset):
             transform (callable, optional): Optional transform to be applied
                 on a sample.
         """
-        self.labels = pd.read_csv(csv_file)
+        if slice:
+            type, idx = slice.split(' ')[0], int(slice.split(' ')[1])
+        
+            if type == 'before':
+                self.labels = pd.read_csv(csv_file)[:idx]
+            elif type == 'after':
+                self.labels = pd.read_csv(csv_file)[idx:]
+        else:
+            self.labels = pd.read_csv(csv_file)
+            
         self.root_dir = root_dir
         self.transform = transform
 
@@ -58,14 +69,18 @@ class ToTensor(object):
 
         # rotate if needed
         if image.shape[0] == 2048:
+            image = resize(image, (224, 224))
             image = image.transpose((2, 1, 0))
         else:
             # swap color axis
+            image = resize(image, (224, 224))
             image = image.transpose((2, 0, 1))
+            
 
         image = torch.from_numpy(image).float()
 
-        in_transform = transforms.Compose([transforms.Normalize([torch.mean(image)], [torch.std(image)])])
+        in_transform = transforms.Compose([transforms.Normalize([torch.mean(image)],
+                                                                [torch.std(image)])])
         image = in_transform(image)
 
         return {'image': image,
