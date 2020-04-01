@@ -13,7 +13,7 @@ import torchvision.transforms as transforms
 class PlantPathologyDataset(Dataset):
     """Plant Pathology dataset."""
     
-    def __init__(self, csv_file, root_dir, transform=None, slice = None):
+    def __init__(self, csv_file, root_dir, transform=None, slice=None, data_type=None):
         """
         Args:
             csv_file (string): Path to the csv file with image discription.
@@ -33,6 +33,7 @@ class PlantPathologyDataset(Dataset):
             
         self.root_dir = root_dir
         self.transform = transform
+        self.data_type = data_type
 
     def __len__(self):
         return len(self.labels)
@@ -44,16 +45,22 @@ class PlantPathologyDataset(Dataset):
         img_name = os.path.join(self.root_dir,
                                 self.labels.image_id[idx]+'.jpg')
         image = io.imread(img_name)
-        healthy = self.labels.healthy[idx]
-        multiple_diseases = self.labels.multiple_diseases[idx]
-        rust = self.labels.rust[idx]
-        scab = self.labels.scab[idx]
-        sample = {'image': image,
-                  'labels': np.array([healthy,
-                                      multiple_diseases,
-                                      rust,
-                                      scab
-                                     ])}
+        
+        if self.data_type != 'test':
+            healthy = self.labels.healthy[idx]
+            multiple_diseases = self.labels.multiple_diseases[idx]
+            rust = self.labels.rust[idx]
+            scab = self.labels.scab[idx]
+        
+            sample = {'image': image,
+                      'labels': np.array([healthy,
+                                          multiple_diseases,
+                                          rust,
+                                          scab
+                                         ])}
+        else:
+            sample = {'image': image}
+         
 
         if self.transform:
             sample = self.transform(sample)
@@ -65,7 +72,10 @@ class ToTensor(object):
     """Convert ndarrays in sample to Tensors."""
 
     def __call__(self, sample):
-        image, labels = sample['image'], sample['labels']
+        if len(sample) == 2:
+            image, labels = sample['image'], sample['labels']
+        else:
+            image = sample['image']
 
         # rotate if needed
         if image.shape[0] == 2048:
@@ -83,5 +93,9 @@ class ToTensor(object):
                                                                 [torch.std(image)])])
         image = in_transform(image)
 
-        return {'image': image,
-                'labels': torch.from_numpy(labels).float()}
+        if len(sample) == 2:
+            return {'image': image,
+                    'labels': torch.from_numpy(labels).float()}
+        else:
+            return {'image': image}
+            
