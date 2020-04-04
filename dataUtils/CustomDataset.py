@@ -13,7 +13,7 @@ import torchvision.transforms as transforms
 class PlantPathologyDataset(Dataset):
     """Plant Pathology dataset."""
     
-    def __init__(self, csv_file, root_dir, transform=None, slice=None, data_type=None):
+    def __init__(self, csv_file, root_dir, transform=None, slice=None, data_type='train'):
         """
         Args:
             csv_file (string): Path to the csv file with image discription.
@@ -46,7 +46,7 @@ class PlantPathologyDataset(Dataset):
                                 self.labels.image_id[idx]+'.jpg')
         image = io.imread(img_name)
         
-        if self.data_type != 'test':
+        if self.data_type == 'train':
             healthy = self.labels.healthy[idx]
             multiple_diseases = self.labels.multiple_diseases[idx]
             rust = self.labels.rust[idx]
@@ -76,21 +76,14 @@ class ToTensor(object):
             image, labels = sample['image'], sample['labels']
         else:
             image = sample['image']
-
-        # rotate if needed
-        if image.shape[0] == 2048:
-            image = resize(image, (224, 224))
-            image = image.transpose((2, 1, 0))
-        else:
-            # swap color axis
-            image = resize(image, (224, 224))
-            image = image.transpose((2, 0, 1))
             
+        # swap color axis
+        image = resize(image, (224, 224))
+        image = image.transpose((2, 0, 1))
 
         image = torch.from_numpy(image).float()
-
-        in_transform = transforms.Compose([transforms.Normalize([torch.mean(image)],
-                                                                [torch.std(image)])])
+        in_transform = transforms.Compose([transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                                                std=[0.229, 0.224, 0.225])])
         image = in_transform(image)
 
         if len(sample) == 2:
