@@ -9,9 +9,9 @@ from skimage import img_as_ubyte
 
 
 class DataAugmentation:
-    def __init__(self, DATA_PATH, max_rot_angle):
+    def __init__(self, DATA_PATH, im_shape=(224,224)):
         self.DATA_PATH = DATA_PATH
-        self.max_rot_angle = max_rot_angle
+        self.im_shape = im_shape
 
 
 
@@ -29,9 +29,23 @@ class DataAugmentation:
         for image in os.listdir(self.DATA_PATH):
             if image.split('.')[1] != 'jpg':
                 continue
+                
+            im_number = image.split('.')[0].split('_')[1] + '_'
 
             im = io.imread(self.DATA_PATH + image)
-            ## Random flip angle
-            angle = np.random.uniform(0, self.max_rot_angle)
-            im = transform.rotate(im, angle)
-            io.imsave(os.path.join(path_to_save,  pref + image), img_as_ubyte(im))
+            
+            ## Rotate and flip
+            angles = [0, 90, 180, 270]
+            
+            for i,angle in enumerate(angles):
+                
+                im = transform.resize(im, self.im_shape)
+                im = transform.rotate(im, angle)
+                
+                io.imsave(os.path.join(path_to_save,  'Train_'+im_number+str(i)+'.jpg'), img_as_ubyte(im))
+                
+                im = im[:, ::-1]
+                io.imsave(os.path.join(path_to_save,  'Train_'+im_number+str(i+4)+'.jpg'), img_as_ubyte(im))
+                
+            
+            
